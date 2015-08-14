@@ -103,16 +103,20 @@ func consume(c *cli.Context) {
 		for scanner.Scan() {
 			ackedLine := scanner.Text()
 
-			mutex.Lock()
-
 			// O(n²) complexity for the win!
-			for _, msg := range unackedMessages {
+			mutex.Lock()
+			for i, msg := range unackedMessages {
 				unackedLine := fmt.Sprintf("%s", msg.Body)
 				if unackedLine == ackedLine {
 					msg.Ack(false)
+
+					// discard message
+					unackedMessages = append(unackedMessages[:i], unackedMessages[i+1:]...)
+					break
 				}
 			}
 			mutex.Unlock()
+
 		}
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "Reading standard input:", err)
