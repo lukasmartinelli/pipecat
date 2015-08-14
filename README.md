@@ -1,4 +1,4 @@
-# pipecat
+# pipecat [![Build Status](https://travis-ci.org/lukasmartinelli/pipecat.svg?branch=master)](https://travis-ci.org/lukasmartinelli/pipecat)
 
 <img align="right" alt="pipecat" src="pipecat.png" />
 Pipecat allows you to scale any program supporting the [FACK contract](#fack-contract)
