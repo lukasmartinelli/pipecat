@@ -56,6 +56,7 @@ func main() {
 		)
 		failOnError(err, "Failed to declare a queue")
 
+		unackedMessages := make(map[string]amqp.Delivery)
 		if termutil.Isatty(os.Stdin.Fd()) {
 			msgs, err := channel.Consume(
 				q.Name, // queue
@@ -68,15 +69,15 @@ func main() {
 			)
 			failOnError(err, "Failed to register a consumer")
 			for msg := range msgs {
-				fmt.Printf("%s", msg.Body)
-				msg.Ack(true)
+				line := fmt.Sprintf("%s", msg.Body)
+				unackedMessages[line] = msg
+				fmt.Println(line)
+				fmt.Fprintln(os.Stderr, fmt.Sprintf("%d", len(unackedMessages)))
 			}
-			//readAll(list, conn)
 		} else {
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
 				line := scanner.Text()
-				body := line
 				err = channel.Publish(
 					"",     // exchange
 					q.Name, // routing key
@@ -84,9 +85,9 @@ func main() {
 					false,  // immediate
 					amqp.Publishing{
 						ContentType: "text/plain",
-						Body:        []byte(body),
+						Body:        []byte(line),
 					})
-				fmt.Printf("%s", body)
+				fmt.Println(line)
 				failOnError(err, "Failed to publish a message")
 			}
 			if err := scanner.Err(); err != nil {
