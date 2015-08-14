@@ -50,12 +50,6 @@ func main() {
 			Usage:  "AMQP URI",
 			EnvVar: "AMQP_URI",
 		},
-		cli.StringFlag{
-			Name:   "fack",
-			Value:  os.DevNull,
-			Usage:  "ACK file",
-			EnvVar: "FACK",
-		},
 	}
 
 	app.Commands = []cli.Command{
@@ -75,14 +69,10 @@ func main() {
 				defer conn.Close()
 				defer channel.Close()
 
-				stdack, err := os.OpenFile(c.String("fack"), os.O_APPEND, 0660)
-				failOnError(err, "Could not open ack file")
-				defer stdack.Close()
-
 				scanner := bufio.NewScanner(os.Stdin)
 				for scanner.Scan() {
 					line := scanner.Text()
-					err = channel.Publish(
+					err := channel.Publish(
 						"",        // exchange
 						queueName, // routing key
 						false,     // mandatory
@@ -94,7 +84,6 @@ func main() {
 
 					failOnError(err, "Failed to publish a message")
 					fmt.Println(line)
-					fmt.Fprintln(stdack, line)
 				}
 				if err := scanner.Err(); err != nil {
 					fmt.Fprintln(os.Stderr, "Reading standard input:", err)
@@ -132,9 +121,6 @@ func main() {
 				)
 				failOnError(err, "Failed to register a consumer")
 
-				stdack, err := os.OpenFile(c.String("fack"), os.O_APPEND, 0660)
-				failOnError(err, "Could not open ack file")
-				defer stdack.Close()
 				forever := make(chan bool)
 
 				go func() {
@@ -147,7 +133,6 @@ func main() {
 						for _, msg := range unackedMessages {
 							unackedLine := fmt.Sprintf("%s", msg.Body)
 							if unackedLine == ackedLine {
-								fmt.Fprintln(stdack, ackedLine)
 								msg.Ack(false)
 							}
 						}
