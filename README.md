@@ -127,8 +127,9 @@ for line in sys.stdin:
 ### Use named queues for ACKs
 
 Now your program can no longer loose messages with `pipecat` because
-you can feed the `FACK` output into `pipecat` which will only then
-acknowledge the messages from the message queue.
+you can feed the `FACK` output into `pipecat`
+using [named pipes](http://thorstenball.com/blog/2013/08/11/named-pipes/)
+which will only then acknowledge the messages from the message queue.
 
 ```
 mkfifo ack && \
