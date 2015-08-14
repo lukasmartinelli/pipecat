@@ -38,6 +38,100 @@ func prepare(amqpUri string, queueName string) (*amqp.Connection, *amqp.Channel)
 	return conn, channel
 }
 
+func publish(c *cli.Context) {
+	queueName := c.Args().First()
+	if queueName == "" {
+		fmt.Println("Please provide name of the queue")
+		os.Exit(1)
+	}
+
+	conn, channel := prepare(c.String("amqpUri"), queueName)
+	defer conn.Close()
+	defer channel.Close()
+
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		line := scanner.Text()
+		err := channel.Publish(
+			"",        // exchange
+			queueName, // routing key
+			false,     // mandatory
+			false,     // immediate
+			amqp.Publishing{
+				ContentType: "text/plain",
+				Body:        []byte(line),
+			})
+
+		failOnError(err, "Failed to publish a message")
+		fmt.Println(line)
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "Reading standard input:", err)
+	}
+
+}
+
+func consume(c *cli.Context) {
+	queueName := c.Args().First()
+	if queueName == "" {
+		fmt.Println("Please provide name of the queue")
+		os.Exit(1)
+	}
+
+	conn, channel := prepare(c.String("amqpUri"), queueName)
+	defer conn.Close()
+	defer channel.Close()
+
+	var mutex sync.Mutex
+	unackedMessages := make([]amqp.Delivery, 100)
+
+	msgs, err := channel.Consume(
+		queueName, // queue
+		"",        // consumer
+		false,     // auto-ack
+		false,     // exclusive
+		false,     // no-local
+		false,     // no-wait
+		nil,       // args
+	)
+	failOnError(err, "Failed to register a consumer")
+
+	forever := make(chan bool)
+
+	go func() {
+
+		scanner := bufio.NewScanner(os.Stdin)
+		for scanner.Scan() {
+			ackedLine := scanner.Text()
+
+			mutex.Lock()
+			for _, msg := range unackedMessages {
+				unackedLine := fmt.Sprintf("%s", msg.Body)
+				if unackedLine == ackedLine {
+					msg.Ack(false)
+				}
+			}
+			mutex.Unlock()
+		}
+		if err := scanner.Err(); err != nil {
+			fmt.Fprintln(os.Stderr, "Reading standard input:", err)
+		}
+
+	}()
+
+	go func() {
+		for msg := range msgs {
+			mutex.Lock()
+			unackedMessages = append(unackedMessages, msg)
+			mutex.Unlock()
+
+			line := fmt.Sprintf("%s", msg.Body)
+			fmt.Println(line)
+		}
+	}()
+	<-forever
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "pipecat"
@@ -58,105 +152,14 @@ func main() {
 			Aliases: []string{"p"},
 			Usage:   "Publish messages to queue",
 			Flags:   globalFlags,
-			Action: func(c *cli.Context) {
-				queueName := c.Args().First()
-				if queueName == "" {
-					fmt.Println("Please provide name of the queue")
-					os.Exit(1)
-				}
-
-				conn, channel := prepare(c.String("amqpUri"), queueName)
-				defer conn.Close()
-				defer channel.Close()
-
-				scanner := bufio.NewScanner(os.Stdin)
-				for scanner.Scan() {
-					line := scanner.Text()
-					err := channel.Publish(
-						"",        // exchange
-						queueName, // routing key
-						false,     // mandatory
-						false,     // immediate
-						amqp.Publishing{
-							ContentType: "text/plain",
-							Body:        []byte(line),
-						})
-
-					failOnError(err, "Failed to publish a message")
-					fmt.Println(line)
-				}
-				if err := scanner.Err(); err != nil {
-					fmt.Fprintln(os.Stderr, "Reading standard input:", err)
-				}
-
-			},
+			Action:  publish,
 		},
 		{
 			Name:    "consume",
 			Flags:   globalFlags,
 			Aliases: []string{"c"},
 			Usage:   "Consume messages from queue",
-			Action: func(c *cli.Context) {
-				queueName := c.Args().First()
-				if queueName == "" {
-					fmt.Println("Please provide name of the queue")
-					os.Exit(1)
-				}
-
-				conn, channel := prepare(c.String("amqpUri"), queueName)
-				defer conn.Close()
-				defer channel.Close()
-
-				var mutex sync.Mutex
-				unackedMessages := make([]amqp.Delivery, 100)
-
-				msgs, err := channel.Consume(
-					queueName, // queue
-					"",        // consumer
-					false,     // auto-ack
-					false,     // exclusive
-					false,     // no-local
-					false,     // no-wait
-					nil,       // args
-				)
-				failOnError(err, "Failed to register a consumer")
-
-				forever := make(chan bool)
-
-				go func() {
-
-					scanner := bufio.NewScanner(os.Stdin)
-					for scanner.Scan() {
-						ackedLine := scanner.Text()
-
-						mutex.Lock()
-						for _, msg := range unackedMessages {
-							unackedLine := fmt.Sprintf("%s", msg.Body)
-							if unackedLine == ackedLine {
-								msg.Ack(false)
-							}
-						}
-						mutex.Unlock()
-					}
-					if err := scanner.Err(); err != nil {
-						fmt.Fprintln(os.Stderr, "Reading standard input:", err)
-					}
-
-				}()
-
-				go func() {
-					for msg := range msgs {
-						mutex.Lock()
-						unackedMessages = append(unackedMessages, msg)
-						mutex.Unlock()
-
-						line := fmt.Sprintf("%s", msg.Body)
-						fmt.Println(line)
-					}
-				}()
-				<-forever
-
-			},
+			Action:  consume,
 		},
 	}
 
