@@ -34,6 +34,14 @@ and still be able to scale the process.
 
 In this example we will calculate the sum a sequence of numbers.
 
+### Connect the broker
+
+If you want to use a message broker you need to specify the `AMPQ_URI` env var.
+
+```
+export AMPQ_URI=amqp://user:pass@host:5672/vhost
+```
+
 ### Create the queue
 
 Let's create a new queue and store the sequence.
