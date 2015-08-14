@@ -66,9 +66,8 @@ func publish(c *cli.Context) {
 		failOnError(err, "Failed to publish a message")
 		fmt.Println(line)
 	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Reading standard input:", err)
-	}
+	err := scanner.Err()
+	failOnError(err, "Failed to read from stdin")
 }
 
 func consume(c *cli.Context) {
@@ -94,7 +93,7 @@ func consume(c *cli.Context) {
 		false,             // no-wait
 		nil,               // args
 	)
-	failOnError(err, "Failed to register a consumer")
+	failOnError(err, "Failed to register consumer")
 
 	ackMessages := func() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -102,7 +101,7 @@ func consume(c *cli.Context) {
 			ackedLine := scanner.Text()
 
 			// O(n²) complexity for the win!
-			mutex.Lock()
+			mutex.Lock() // use channels some day
 			for i, msg := range unackedMessages {
 				unackedLine := fmt.Sprintf("%s", msg.Body)
 				if unackedLine == ackedLine {
@@ -116,9 +115,8 @@ func consume(c *cli.Context) {
 			mutex.Unlock()
 
 		}
-		if err := scanner.Err(); err != nil {
-			fmt.Fprintln(os.Stderr, "Reading standard input:", err)
-		}
+		err := scanner.Err()
+		failOnError(err, "Failed to read from stdin")
 	}
 
 	forever := make(chan bool)
