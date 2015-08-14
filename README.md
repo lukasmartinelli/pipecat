@@ -17,6 +17,13 @@ Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
 - [RabbitMQ](https://www.rabbitmq.com/)
 - [Azure Service Bus](https://azure.microsoft.com/en-us/services/service-bus/)
 
+## FACK Contract
+
+> Any program that accepts output from `stdin` and writes to `stdout`
+  should accept an environment variable `FACK` containing a file descriptor.
+  If a single operation performed on a line from `stdin` was successful ,
+  that line should be written to `FACK`.
+
 ## Using pipecat
 
 `pipecat` provides message queues via UNIX pipes.
@@ -86,15 +93,7 @@ running. No one know which input lines from `stdin` the program
 has already processed.
 
 If your program needs that ability you need to implement
-the `FACK` contract , demonstrated at the `multiply.py` sample.
-
-### FACK Contract
-
-Any program that accepts output from `stdin` and writes to `stdout`
-should accept an environment variable `FACK` containing a file descriptor.
-
-If a single operation performed on a line from `stdin` was successful ,
-that line should be written to `FACK`.
+the [FACK contract](#fack-contract), demonstrated at the `multiply.py` sample.
 
 ### Implement the contract
 
