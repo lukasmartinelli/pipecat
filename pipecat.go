@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/andrew-d/go-termutil"
 	"github.com/codegangsta/cli"
@@ -30,11 +31,17 @@ func main() {
 			Usage:  "AMQP URI",
 			EnvVar: "AMQP_URI",
 		},
+		cli.StringFlag{
+			Name:   "fack",
+			Value:  os.DevNull,
+			Usage:  "Writes the acknowledged lines to file handle",
+			EnvVar: "FACK",
+		},
 	}
 
 	app.Action = func(c *cli.Context) {
-		list := c.Args().First()
-		if list == "" {
+		queueName := c.Args().First()
+		if queueName == "" {
 			fmt.Println("Please provide name of the queue")
 			os.Exit(1)
 		}
@@ -48,28 +55,58 @@ func main() {
 		defer channel.Close()
 
 		q, err := channel.QueueDeclare(
-			list,  // name
-			true,  // durable
-			false, // delete when unused
-			false, // exclusive
-			false, // no-wait
-			nil,   // arguments
+			queueName, // name
+			true,      // durable
+			false,     // delete when unused
+			false,     // exclusive
+			false,     // no-wait
+			nil,       // arguments
 		)
 		failOnError(err, "Failed to declare a queue")
 
 		var mutex sync.Mutex
 		unackedMessages := make([]amqp.Delivery, 100)
+
+		msgs, err := channel.Consume(
+			q.Name, // queue
+			"",     // consumer
+			false,  // auto-ack
+			false,  // exclusive
+			false,  // no-local
+			false,  // no-wait
+			nil,    // args
+		)
+		failOnError(err, "Failed to register a consumer")
+
+		stdack, err := os.OpenFile(c.String("fack"), os.O_APPEND, 0660)
+		failOnError(err, "Could not open ack file")
+		defer stdack.Close()
+
 		if termutil.Isatty(os.Stdin.Fd()) {
-			msgs, err := channel.Consume(
-				q.Name, // queue
-				"",     // consumer
-				false,  // auto-ack
-				false,  // exclusive
-				false,  // no-local
-				false,  // no-wait
-				nil,    // args
-			)
-			failOnError(err, "Failed to register a consumer")
+			// only read
+			forever := make(chan bool)
+
+			go func() {
+
+				scanner := bufio.NewScanner(os.Stdin)
+				for scanner.Scan() {
+					ackedLine := scanner.Text()
+
+					mutex.Lock()
+					for _, msg := range unackedMessages {
+						unackedLine := fmt.Sprintf("%s", msg.Body)
+						if unackedLine == ackedLine {
+							fmt.Fprintln(stdack, ackedLine)
+							msg.Ack(false)
+						}
+					}
+					mutex.Unlock()
+				}
+				if err := scanner.Err(); err != nil {
+					fmt.Fprintln(os.Stderr, "Reading standard input:", err)
+				}
+
+			}()
 
 			go func() {
 				for msg := range msgs {
@@ -77,12 +114,38 @@ func main() {
 					unackedMessages = append(unackedMessages, msg)
 					mutex.Unlock()
 
+					time.Sleep(100 * time.Millisecond)
 					line := fmt.Sprintf("%s", msg.Body)
 					fmt.Println(line)
-					fmt.Fprintln(os.Stderr, fmt.Sprintf("%d", len(unackedMessages)))
 				}
 			}()
+			<-forever
 		} else {
+
+			scanner := bufio.NewScanner(os.Stdin)
+			for scanner.Scan() {
+				line := scanner.Text()
+				err = channel.Publish(
+					"",     // exchange
+					q.Name, // routing key
+					false,  // mandatory
+					false,  // immediate
+					amqp.Publishing{
+						ContentType: "text/plain",
+						Body:        []byte(line),
+					})
+
+				failOnError(err, "Failed to publish a message")
+				fmt.Println(line)
+				fmt.Fprintln(stdack, line)
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintln(os.Stderr, "Reading standard input:", err)
+			}
+
+		}
+
+		/*} else {
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
 				line := scanner.Text()
@@ -101,7 +164,7 @@ func main() {
 			if err := scanner.Err(); err != nil {
 				fmt.Fprintln(os.Stderr, "Reading standard input:", err)
 			}
-		}
+		}*/
 	}
 
 	app.Run(os.Args)
