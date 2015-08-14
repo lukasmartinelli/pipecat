@@ -54,13 +54,13 @@ Let's create a new queue and store the sequence.
 seq 1 1000 | pipecat publish numbers
 ```
 
-### Add two numbers
+### Multiply numbers
 
 So we write a small python program `multiply.py` that
 multiplies every number from `stdin`
 with 10 and writes the result to `stdout`.
 
-```bash
+```python
 import sys
 
 for line in sys.stdin:
@@ -71,10 +71,10 @@ for line in sys.stdin:
 
 Let's start the worker and store the results
 in an additional queue.
-
+We want to acknowledge all messages we receive for now.
 
 ```bash
-pipecat consume numbers | python multiply.py | pipecat publish results
+pipecat consume numbers --autoack | python -u multiply.py | pipecat publish results
 ```
 
 ## Aggregate results
@@ -92,7 +92,7 @@ sys.stdout.write('{}\n'.format(sum))
 And now look at the result.
 
 ```bash
-pipecat --autoack consume results | python sum.py
+pipecat consume results --autoack --non-blocking | python sum.py
 ```
 
 ## Make it failsafe
@@ -101,32 +101,31 @@ We already have written a small, concise and very
 scalable set of programs. We can now run the `multiply.py`
 step on hundreds of servers.
 
-However, if for example the server dies while `multiply.py` is
-running. No one know which input lines from `stdin` the program
-has already processed.
+However, if the server dies while `multiply.py` is
+running the input lines already processed are lost.
 
 If your program needs that ability you need to implement
-the [FACK contract](#fack-contract), demonstrated at the `multiply.py` sample.
+the [FACK contract](#fack-contract), demonstrated for the `multiply.py` sample.
 
 ### Implement the contract
 
-Implementing the contract is straightforward in Python.
+Implementing the contract is straightforward.
 
 1. Support the optional `FACK` environment variable containing a file name
-2. Write the recevied input into this file handle if we
+2. Write the received input into this file handle if we
    performed the operation successfully on it
 
 ```python
 import sys
 import os
 
-stdack = open(os.getenv('FACK', sys.devnull), 'w')
-
-for line in sys.stdin:
-    num = int(line.strip())
-    result = num * 10
-    sys.stdout.write('{}\n'.format(result))
-    stdack.write(line)
+with open(os.getenv('FACK', os.devnull), 'w') as stdack:
+    for line in sys.stdin:
+        num = int(line.strip())
+        result = num * 10
+        sys.stdout.write('{}\n'.format(result))
+        stdack.write(line)
+        stdack.flush()
 ```
 
 ### Use named queues for ACKs
@@ -136,10 +135,30 @@ you can feed the `FACK` output into `pipecat`
 using [named pipes](http://thorstenball.com/blog/2013/08/11/named-pipes/)
 which will only then acknowledge the messages from the message queue.
 
+Fill the queue again.
+
+```bash
+seq 1 1000 | pipecat publish numbers
 ```
-mkfifo ack && \
-cat ack | pipecat consume numbers | FACK=ack python multiply.py | pipecat publish results && \
+
+And use a named pipe to funnel the acknowledged input lines back into
+pipecat.
+
+```bash
+mkfifo ack
+cat ack | pipecat consume numbers
+| FACK=ack python -u multiply.py \
+| pipecat publish results
 rm ack
+```
+
+And consume all messages to reduce a result.
+In the reduce operation we need to autoack all received messages
+because we can't possibly hold the entire result set in memory until the
+operation has performed.
+
+```bash
+pipecat consume results --autoack --non-blocking | python -u sum.py
 ```
 
 With a few lines additional code only depending on the standard library
