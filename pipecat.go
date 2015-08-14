@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
 	"github.com/andrew-d/go-termutil"
 	"github.com/codegangsta/cli"
@@ -56,7 +57,8 @@ func main() {
 		)
 		failOnError(err, "Failed to declare a queue")
 
-		unackedMessages := make(map[string]amqp.Delivery)
+		var mutex sync.Mutex
+		unackedMessages := make([]amqp.Delivery, 100)
 		if termutil.Isatty(os.Stdin.Fd()) {
 			msgs, err := channel.Consume(
 				q.Name, // queue
@@ -68,12 +70,18 @@ func main() {
 				nil,    // args
 			)
 			failOnError(err, "Failed to register a consumer")
-			for msg := range msgs {
-				line := fmt.Sprintf("%s", msg.Body)
-				unackedMessages[line] = msg
-				fmt.Println(line)
-				fmt.Fprintln(os.Stderr, fmt.Sprintf("%d", len(unackedMessages)))
-			}
+
+			go func() {
+				for msg := range msgs {
+					mutex.Lock()
+					unackedMessages = append(unackedMessages, msg)
+					mutex.Unlock()
+
+					line := fmt.Sprintf("%s", msg.Body)
+					fmt.Println(line)
+					fmt.Fprintln(os.Stderr, fmt.Sprintf("%d", len(unackedMessages)))
+				}
+			}()
 		} else {
 			scanner := bufio.NewScanner(os.Stdin)
 			for scanner.Scan() {
