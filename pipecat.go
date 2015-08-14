@@ -57,6 +57,20 @@ func main() {
 		failOnError(err, "Failed to declare a queue")
 
 		if termutil.Isatty(os.Stdin.Fd()) {
+			msgs, err := channel.Consume(
+				q.Name, // queue
+				"",     // consumer
+				false,  // auto-ack
+				false,  // exclusive
+				false,  // no-local
+				false,  // no-wait
+				nil,    // args
+			)
+			failOnError(err, "Failed to register a consumer")
+			for msg := range msgs {
+				fmt.Printf("%s", msg.Body)
+				msg.Ack(true)
+			}
 			//readAll(list, conn)
 		} else {
 			scanner := bufio.NewScanner(os.Stdin)
@@ -72,7 +86,7 @@ func main() {
 						ContentType: "text/plain",
 						Body:        []byte(body),
 					})
-				log.Printf(" [x] Sent %s", body)
+				fmt.Printf("%s", body)
 				failOnError(err, "Failed to publish a message")
 			}
 			if err := scanner.Err(); err != nil {
