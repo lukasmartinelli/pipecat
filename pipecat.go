@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/streadway/amqp"
@@ -120,22 +121,26 @@ func consume(c *cli.Context) {
 		}
 	}
 
-	consumeMessages := func() {
-		for msg := range msgs {
+	forever := make(chan bool)
 
+	consumeMessages := func() {
+		select {
+		case msg := <-msgs:
 			if !c.Bool("autoack") {
 				mutex.Lock()
 				unackedMessages = append(unackedMessages, msg)
 				mutex.Unlock()
-
 			}
-
 			line := fmt.Sprintf("%s", msg.Body)
 			fmt.Println(line)
+		case <-time.After(time.Second * time.Duration(c.Int("timeout"))):
+			if c.Bool("no-blocking") {
+				channel.Close()
+				forever <- false
+			}
 		}
 	}
 
-	forever := make(chan bool)
 	if c.Bool("autoack") {
 		go consumeMessages()
 	} else {
@@ -160,6 +165,15 @@ func main() {
 		cli.BoolFlag{
 			Name:  "autoack",
 			Usage: "Ack all received messages directly",
+		},
+		cli.BoolFlag{
+			Name:  "no-blocking",
+			Usage: "Dont block consumer",
+		},
+		cli.IntFlag{
+			Name:  "timeout",
+			Value: 1,
+			Usage: "Timeout to wait for messages",
 		},
 	}
 
