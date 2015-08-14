@@ -68,7 +68,6 @@ func publish(c *cli.Context) {
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Reading standard input:", err)
 	}
-
 }
 
 func consume(c *cli.Context) {
@@ -105,6 +104,8 @@ func consume(c *cli.Context) {
 			ackedLine := scanner.Text()
 
 			mutex.Lock()
+
+			// O(n²) complexity for the win!
 			for _, msg := range unackedMessages {
 				unackedLine := fmt.Sprintf("%s", msg.Body)
 				if unackedLine == ackedLine {

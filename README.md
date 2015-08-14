@@ -7,7 +7,11 @@ Think of it as [netcat](http://nc110.sourceforge.net/)
 but with message acknowledgments.
 It is the successor of [redis-pipe](http://github.com/lukasmartinelli/redis-pipe).
 
-**THIS IS ONLY THE SPECIFICATION. THE IMPLEMENTATION WILL FOLLOW.**
+## Install
+
+```
+go get github.com/lukasmartinelli/pipecat
+```
 
 ## Support
 
@@ -36,10 +40,10 @@ In this example we will calculate the sum a sequence of numbers.
 
 ### Connect the broker
 
-If you want to use a message broker you need to specify the `AMPQ_URI` env var.
+If you want to use a message broker you need to specify the `AMQP_URI` env var.
 
 ```
-export AMPQ_URI=amqp://user:pass@host:5672/vhost
+export AMQP_URI=amqp://user:pass@host:5672/vhost
 ```
 
 ### Create the queue
@@ -47,7 +51,7 @@ export AMPQ_URI=amqp://user:pass@host:5672/vhost
 Let's create a new queue and store the sequence.
 
 ```bash
-seq 1 1000 | pipecat numbers
+seq 1 1000 | pipecat publish numbers
 ```
 
 ### Add two numbers
@@ -70,7 +74,7 @@ in an additional queue.
 
 
 ```bash
-pipecat numbers | python multiply.py | pipecat results
+pipecat consume numbers | python multiply.py | pipecat publish results
 ```
 ## Aggregate results
 
@@ -87,7 +91,7 @@ sys.stdout.write('{}\n'.format(sum))
 And now look at the result.
 
 ```bash
-pipecat results | python sum.py
+pipecat --autoack consume results | python sum.py
 ```
 
 ## Make it failsafe
@@ -133,7 +137,7 @@ which will only then acknowledge the messages from the message queue.
 
 ```
 mkfifo ack && \
-cat ack | pipecat numbers | FACK=ack python multiply.py | pipecat results && \
+cat ack | pipecat consume numbers | FACK=ack python multiply.py | pipecat publish results && \
 rm ack
 ```
 
