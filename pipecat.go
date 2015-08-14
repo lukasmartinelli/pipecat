@@ -124,6 +124,7 @@ func consume(c *cli.Context) {
 	forever := make(chan bool)
 
 	consumeMessages := func() {
+		timeout := time.Second * time.Duration(c.Int("timeout"))
 		for {
 			select {
 			case msg := <-msgs:
@@ -134,9 +135,8 @@ func consume(c *cli.Context) {
 				}
 				line := fmt.Sprintf("%s", msg.Body)
 				fmt.Println(line)
-			case <-time.After(time.Second * time.Duration(c.Int("timeout"))):
-				if c.Bool("no-blocking") {
-					fmt.Println("bloooocked it")
+			case <-time.After(timeout):
+				if c.Bool("non-blocking") {
 					forever <- false
 					return
 				}
@@ -170,8 +170,8 @@ func main() {
 			Usage: "Ack all received messages directly",
 		},
 		cli.BoolFlag{
-			Name:  "no-blocking",
-			Usage: "Dont block consumer",
+			Name:  "non-blocking",
+			Usage: "Stop consumer after timeout",
 		},
 		cli.IntFlag{
 			Name:  "timeout",
