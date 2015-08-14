@@ -76,6 +76,7 @@ in an additional queue.
 ```bash
 pipecat consume numbers | python multiply.py | pipecat publish results
 ```
+
 ## Aggregate results
 
 Now we want to store the sum of all these numbers
@@ -84,7 +85,7 @@ with `sum.py`.
 ```python
 import sys
 
-sum = sum(int(line.strip() for line in sys.stdin))
+sum = sum(int(line.strip()) for line in sys.stdin)
 sys.stdout.write('{}\n'.format(sum))
 ```
 

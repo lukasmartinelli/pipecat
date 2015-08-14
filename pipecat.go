@@ -45,7 +45,7 @@ func publish(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	conn, channel := prepare(c.String("amqpUri"), queueName)
+	conn, channel := prepare(c.String("amqpuri"), queueName)
 	defer conn.Close()
 	defer channel.Close()
 
@@ -77,7 +77,7 @@ func consume(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	conn, channel := prepare(c.String("amqpUri"), queueName)
+	conn, channel := prepare(c.String("amqpuri"), queueName)
 	defer conn.Close()
 	defer channel.Close()
 
@@ -85,20 +85,17 @@ func consume(c *cli.Context) {
 	unackedMessages := make([]amqp.Delivery, 100)
 
 	msgs, err := channel.Consume(
-		queueName, // queue
-		"",        // consumer
-		false,     // auto-ack
-		false,     // exclusive
-		false,     // no-local
-		false,     // no-wait
-		nil,       // args
+		queueName,         // queue
+		"",                // consumer
+		c.Bool("autoack"), // auto-ack
+		false,             // exclusive
+		false,             // no-local
+		false,             // no-wait
+		nil,               // args
 	)
 	failOnError(err, "Failed to register a consumer")
 
-	forever := make(chan bool)
-
-	go func() {
-
+	ackMessages := func() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			ackedLine := scanner.Text()
@@ -121,19 +118,30 @@ func consume(c *cli.Context) {
 		if err := scanner.Err(); err != nil {
 			fmt.Fprintln(os.Stderr, "Reading standard input:", err)
 		}
+	}
 
-	}()
-
-	go func() {
+	consumeMessages := func() {
 		for msg := range msgs {
-			mutex.Lock()
-			unackedMessages = append(unackedMessages, msg)
-			mutex.Unlock()
+
+			if !c.Bool("autoack") {
+				mutex.Lock()
+				unackedMessages = append(unackedMessages, msg)
+				mutex.Unlock()
+
+			}
 
 			line := fmt.Sprintf("%s", msg.Body)
 			fmt.Println(line)
 		}
-	}()
+	}
+
+	forever := make(chan bool)
+	if c.Bool("autoack") {
+		go consumeMessages()
+	} else {
+		go ackMessages()
+		go consumeMessages()
+	}
 	<-forever
 }
 
@@ -144,10 +152,14 @@ func main() {
 
 	globalFlags := []cli.Flag{
 		cli.StringFlag{
-			Name:   "amqpUri",
+			Name:   "amqpuri",
 			Value:  "amqp://guest:guest@localhost:5672/",
 			Usage:  "AMQP URI",
 			EnvVar: "AMQP_URI",
+		},
+		cli.BoolFlag{
+			Name:  "autoack",
+			Usage: "Ack all received messages directly",
 		},
 	}
 
