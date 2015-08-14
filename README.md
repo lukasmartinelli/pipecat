@@ -1,32 +1,21 @@
 # pipecat
 
-**THIS IS ONLY THE SPECIFICATION. THE IMPLEMENTATION WILL FOLLOW.**
-
-Pipecat allows you to scale any program supporting the [FACK contract]()
+<img align="right" alt="pipecat" src="pipecat.png" />
+Pipecat allows you to scale any program supporting the [FACK contract](#fack-contract)
 using traditional UNIX pipes.
 Think of it as [netcat](http://nc110.sourceforge.net/)
 but with message acknowledgments.
 It is the successor of [redis-pipe](http://github.com/lukasmartinelli/redis-pipe).
 
-<img align="right" alt="pipecat" src="pipecat.png" />
+**THIS IS ONLY THE SPECIFICATION. THE IMPLEMENTATION WILL FOLLOW.**
 
 ## Support
 
-pipecat supports most message queue mechanisms:
-
-All messaging servers supporting AMPQ 0.9.1:
+Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
 
 - [ActiveMQ](http://activemq.apache.org/)
 - [RabbitMQ](https://www.rabbitmq.com/)
 - [Azure Service Bus](https://azure.microsoft.com/en-us/services/service-bus/)
-
-And others:
-
-- [Redis](http://redis.io/) through [redismq](https://github.com/adjust/redismq)
-- [NATS](http://nats.io/)
-- [AWS SQS](https://aws.amazon.com/sqs/)
-
-And for demo purposes a local mode using Linux named pipes internally.
 
 ## Using pipecat
 
@@ -42,7 +31,7 @@ In this example we will calculate the sum a sequence of numbers.
 
 Let's create a new queue and store the sequence.
 
-```
+```bash
 seq 1 1000 | pipecat numbers
 ```
 
@@ -52,7 +41,7 @@ So we write a small python program `multiply.py` that
 multiplies every number from `stdin`
 with 10 and writes the result to `stdout`.
 
-```
+```bash
 import sys
 
 for line in sys.stdin:
@@ -65,7 +54,7 @@ Let's start the worker and store the results
 in an additional queue.
 
 
-```
+```bash
 pipecat numbers | python multiply.py | pipecat results
 ```
 ## Aggregate results
@@ -82,7 +71,7 @@ sys.stdout.write('{}\n'.format(sum))
 
 And now look at the result.
 
-```
+```bash
 pipecat results | python sum.py
 ```
 
@@ -99,7 +88,7 @@ has already processed.
 If your program needs that ability you need to implement
 the `FACK` contract , demonstrated at the `multiply.py` sample.
 
-### Contract
+### FACK Contract
 
 Any program that accepts output from `stdin` and writes to `stdout`
 should accept an environment variable `FACK` containing a file descriptor.
@@ -115,7 +104,7 @@ Implementing the contract is straightforward in Python.
 2. Write the recevied input into this file handle if we
    performed the operation successfully on it
 
-```
+```python
 import sys
 import os
 
