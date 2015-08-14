@@ -124,19 +124,22 @@ func consume(c *cli.Context) {
 	forever := make(chan bool)
 
 	consumeMessages := func() {
-		select {
-		case msg := <-msgs:
-			if !c.Bool("autoack") {
-				mutex.Lock()
-				unackedMessages = append(unackedMessages, msg)
-				mutex.Unlock()
-			}
-			line := fmt.Sprintf("%s", msg.Body)
-			fmt.Println(line)
-		case <-time.After(time.Second * time.Duration(c.Int("timeout"))):
-			if c.Bool("no-blocking") {
-				channel.Close()
-				forever <- false
+		for {
+			select {
+			case msg := <-msgs:
+				if !c.Bool("autoack") {
+					mutex.Lock()
+					unackedMessages = append(unackedMessages, msg)
+					mutex.Unlock()
+				}
+				line := fmt.Sprintf("%s", msg.Body)
+				fmt.Println(line)
+			case <-time.After(time.Second * time.Duration(c.Int("timeout"))):
+				if c.Bool("no-blocking") {
+					fmt.Println("bloooocked it")
+					forever <- false
+					return
+				}
 			}
 		}
 	}
