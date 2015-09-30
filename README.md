@@ -31,12 +31,12 @@ Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
 ## Using pipecat
 
 `pipecat` provides message queues via UNIX pipes.
-The need arose when I started building messaging support into every
-utility in order to make it scalable.
+The need arose when I started building messaging support into
+utilities in order to make them scalable.
 I want to leave my programs the way they are without heavy dependencies
 and still be able to scale the process.
 
-In this example we will calculate the sum a sequence of numbers.
+In this example we will calculate the sum of a sequence of numbers.
 
 ### Connect the broker
 
@@ -48,7 +48,7 @@ export AMQP_URI=amqp://user:pass@host:5672/vhost
 
 ### Create the queue
 
-Let's create a new queue and store the sequence.
+Let's create a new queue and `publish` a sequence.
 
 ```bash
 seq 1 1000 | pipecat publish numbers
@@ -56,7 +56,7 @@ seq 1 1000 | pipecat publish numbers
 
 ### Multiply numbers
 
-So we write a small python program `multiply.py` that
+We write a small python program `multiply.py` that
 multiplies every number from `stdin`
 with 10 and writes the result to `stdout`.
 
@@ -69,9 +69,10 @@ for line in sys.stdin:
     sys.stdout.write('{}\n'.format(result))
 ```
 
-Let's start the worker and store the results
+Let's start the `consumer` which reads all numbers from
+the `numbers` queue and `publish` the results
 in an additional queue.
-We want to acknowledge all messages we receive for now.
+We want to acknowledge all messages we receive with `--autoack`.
 
 ```bash
 pipecat consume numbers --autoack | python -u multiply.py | pipecat publish results
@@ -79,7 +80,7 @@ pipecat consume numbers --autoack | python -u multiply.py | pipecat publish resu
 
 ## Aggregate results
 
-Now we want to store the sum of all these numbers
+Now we  store the sum of all these numbers
 with `sum.py`.
 
 ```python
@@ -89,7 +90,9 @@ sum = sum(int(line.strip()) for line in sys.stdin)
 sys.stdout.write('{}\n'.format(sum))
 ```
 
-And now look at the result.
+And now look at the result. Because we want the consumer to eventually
+finsish we specify it as `--non-blocking` which will stop consuming if no messages
+arrive after a configurable timeout.
 
 ```bash
 pipecat consume results --autoack --non-blocking | python sum.py
@@ -99,10 +102,10 @@ pipecat consume results --autoack --non-blocking | python sum.py
 
 We already have written a small, concise and very
 scalable set of programs. We can now run the `multiply.py`
-step on hundreds of servers.
+step on many servers.
 
 However, if the server dies while `multiply.py` is
-running the input lines already processed are lost.
+running **the input lines already processed are lost**.
 
 If your program needs that ability you need to implement
 the [FACK contract](#fack-contract), demonstrated for the `multiply.py` sample.
@@ -124,14 +127,14 @@ with open(os.getenv('FACK', os.devnull), 'w') as stdack:
         num = int(line.strip())
         result = num * 10
         sys.stdout.write('{}\n'.format(result))
-        stdack.write(line)
-        stdack.flush()
+        stdack.write(line) # Ack the processed line
+        stdack.flush() # Make sure line does not get lost in the buffer
 ```
 
 ### Use named queues for ACKs
 
 Now your program can no longer loose messages with `pipecat` because
-you can feed the `FACK` output into `pipecat`
+you can feed the `FACK` output back into `pipecat`
 using [named pipes](http://thorstenball.com/blog/2013/08/11/named-pipes/)
 which will only then acknowledge the messages from the message queue.
 
@@ -152,7 +155,7 @@ cat ack | pipecat consume numbers
 rm ack
 ```
 
-And consume all messages to reduce a result.
+Consume all messages to reduce a result.
 In the reduce operation we need to autoack all received messages
 because we can't possibly hold the entire result set in memory until the
 operation has performed.
@@ -163,4 +166,4 @@ pipecat consume results --autoack --non-blocking | python -u sum.py
 
 With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
-Without any dependencies and without changing the behavior a bit.
+Without any dependencies and without changing the behavior bit.
