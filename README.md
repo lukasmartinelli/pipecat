@@ -68,13 +68,13 @@ pipecat consume results --autoack --non-blocking | python -cu 'import sys; print
 If you do not have an existing AMPQ broker at hand you can run
 RabbitMQ in a docker container, expose the ports and connect to it.
 
-```
+```bash
 docker run -d -p 5672:5672 --hostname pipecat-rabbit --name pipecat-rabbit rabbitmq:3
 ```
 
 Now connect to localhost with the default `guest` login.
 
-```
+```bash
 export AMQP_URI=amqp://guest:guest@localhost:5672/vhost
 ```
 
@@ -91,6 +91,15 @@ running **the input lines already processed are lost**.
 If your program needs that ability you need to implement
 the [FACK contract](#fack-contract), demonstrated for the `multiply.py` sample.
 
+## FACK Contract
+
+> Any program that accepts output from `stdin` and writes to `stdout`
+  should accept an environment variable `FACK` containing a file descriptor.
+  If a single operation performed on a line from `stdin` was successful ,
+  that line should be written to `FACK`.
+
+![FACK contract Flow
+
 ### Implement the contract
 
 Implementing the contract is straightforward.
@@ -99,11 +108,17 @@ Implementing the contract is straightforward.
 2. Write the received input into this file handle if we
    performed the operation successfully on it
 
+#### Python Example
+
+Below is a Python example `multiply.py` which multiplies the sequence of numbers as above
+but writes the input line to `stdack` if successfully processed.
+
+
 ```python
 import sys
 import os
 
-with open(os.getenv('FACK', os.devnull), 'w') as stdack:
+with open(os.getenv('FACK', os.devnull), 'w') as stdack: # Works even if FACK is not set
     for line in sys.stdin:
         num = int(line.strip())
         result = num * 10
@@ -150,16 +165,7 @@ you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
 
 ![Pipecat Flow Diagram](diagrams/pipecat_flow.png)
-
-
-## FACK Contract
-
-> Any program that accepts output from `stdin` and writes to `stdout`
-  should accept an environment variable `FACK` containing a file descriptor.
-  If a single operation performed on a line from `stdin` was successful ,
-  that line should be written to `FACK`.
-
-![FACK contract Flow Diagram](diagrams/pipecat_flow.png)
+ Diagram](diagrams/fack_contract.png)
 
 ## Python Example
 
