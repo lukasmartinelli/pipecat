@@ -149,7 +149,7 @@ With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
 
-![Pipecat Flow Diagram](pipecat_flow.png)
+![Pipecat Flow Diagram](diagrams/pipecat_flow.png)
 
 
 ## FACK Contract
@@ -158,8 +158,9 @@ Without any dependencies and without changing the behavior bit.
   should accept an environment variable `FACK` containing a file descriptor.
   If a single operation performed on a line from `stdin` was successful ,
   that line should be written to `FACK`.
-  
-  
+
+![FACK contract Flow Diagram](diagrams/pipecat_flow.png)
+
 ## Python Example
 
 
