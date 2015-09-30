@@ -167,3 +167,5 @@ pipecat consume results --autoack --non-blocking | python -u sum.py
 With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
+
+![Pipecat Flow Diagram](pipecat_flow.png)
