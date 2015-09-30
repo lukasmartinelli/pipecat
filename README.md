@@ -134,6 +134,8 @@ you can feed the `FACK` output back into `pipecat`
 using [named pipes](http://thorstenball.com/blog/2013/08/11/named-pipes/)
 which will only then acknowledge the messages from the message queue.
 
+![Pipecat Flow Diagram](diagrams/pipecat_flow.png)
+
 Fill the queue again.
 
 ```bash
@@ -145,7 +147,7 @@ pipecat.
 
 ```bash
 mkfifo ack
-cat ack | pipecat consume numbers
+cat ack | pipecat consume numbers \
 | FACK=ack python -u multiply.py \
 | pipecat publish results
 rm ack
@@ -157,59 +159,9 @@ because we can't possibly hold the entire result set in memory until the
 operation has performed.
 
 ```bash
-pipecat consume results --autoack --non-blocking | python -u sum.py
+pipecat consume results --autoack --non-blocking | python -cu 'import sys; print(sum(map(int, sys.stdin)))'
 ```
 
 With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
-
-![Pipecat Flow Diagram](diagrams/pipecat_flow.png)
- Diagram](diagrams/fack_contract.png)
-
-## Python Example
-
-
-### Multiply numbers
-
-We write a small python program `multiply.py` that
-multiplies every number from `stdin`
-with 10 and writes the result to `stdout`.
-
-```python
-import sys
-
-for line in sys.stdin:
-    num = int(line.strip())
-    result = num * 10
-    sys.stdout.write('{}\n'.format(result))
-```
-
-Let's start the `consumer` which reads all numbers from
-the `numbers` queue and `publish` the results
-in an additional queue.
-We want to acknowledge all messages we receive with `--autoack`.
-
-```bash
-pipecat consume numbers --autoack | python -u multiply.py | pipecat publish results
-```
-
-## Aggregate results
-
-Now we  store the sum of all these numbers
-with `sum.py`.
-
-```python
-import sys
-
-sum = sum(int(line.strip()) for line in sys.stdin)
-sys.stdout.write('{}\n'.format(sum))
-```
-
-And now look at the result. Because we want the consumer to eventually
-finsish we specify it as `--non-blocking` which will stop consuming if no messages
-arrive after a configurable timeout.
-
-```bash
-pipecat consume results --autoack --non-blocking | python sum.py
-```
