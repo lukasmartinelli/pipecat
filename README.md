@@ -98,7 +98,7 @@ the [FACK contract](#fack-contract), demonstrated for the `multiply.py` sample.
   If a single operation performed on a line from `stdin` was successful ,
   that line should be written to `FACK`.
 
-![FACK contract Flow
+![FACK contract Flow](diagrams/fack_contract.png)
 
 ### Implement the contract
 
