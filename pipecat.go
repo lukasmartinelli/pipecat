@@ -21,7 +21,7 @@ func failOnError(err error, msg string) {
 
 func prepare(amqpUri string, queueName string) (*amqp.Connection, *amqp.Channel) {
 	conn, err := amqp.Dial(amqpUri)
-	failOnError(err, "Failed to connect to AMPQ broker")
+	failOnError(err, "Failed to connect to AMQP broker")
 
 	channel, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
