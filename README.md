@@ -25,7 +25,7 @@ Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
 
 `pipecat` connects message queues and UNIX pipes.
 The need arose when I started building messaging support into
-utilities in order to make them scalable but still wanted to leave my programs the way they are without heavy dependencies and still be able to scale the process.
+utilities in order to make them scalable but still wanted to leave my programs the way they are without heavy dependencies and still be able to scale the process **reliably**.
 
 In this example we will calculate the sum of a sequence of numbers.
 
