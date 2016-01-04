@@ -21,9 +21,33 @@ pipecat consume results --autoack --non-blocking \
 
 ## Install
 
+**OSX**
+
+```bash
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_darwin_amd64
+chmod +x pipecat
+
+./pipecat --help
+```
+
+**Linux**
+
+```bash
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_darwin_amd64
+chmod +x pipecat
+
+./pipecat --help
+```
+
+
+**Install from Source**
+
 ```
 go get github.com/lukasmartinelli/pipecat
 ```
+
+If you are using Windows or 32-bit architectures you need to [download the appropriate binary
+yourself](https://github.com/lukasmartinelli/pipecat/releases/latest).
 
 ## Support
 
@@ -177,3 +201,12 @@ pipecat consume results --autoack --non-blocking | python -cu 'import sys; print
 With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
+
+## Cross Compile Release
+
+We use [gox](https://github.com/mitchellh/gox) to create distributable
+binaries for Windows, OSX and Linux.
+
+```bash
+docker run --rm -v "$(pwd)":/usr/src/pipecat -w /usr/src/pipecat tcnksm/gox:1.4.2-light
+```

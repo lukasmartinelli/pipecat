@@ -155,6 +155,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "pipecat"
 	app.Usage = "Connect unix pipes and message queues"
+	app.Version = "0.1"
 
 	globalFlags := []cli.Flag{
 		cli.StringFlag{
