@@ -2,7 +2,7 @@
 
 <img align="right" alt="pipecat" src="pipecat.png" />
 Pipecat allows you to scale any program supporting the [FACK contract](#fack-contract)
-using traditional UNIX pipes.
+using traditional UNIX pipes and [AMPQ](https://www.amqp.org/).
 Think of it as [netcat](http://nc110.sourceforge.net/)
 but with message acknowledgments.
 It is the successor of [redis-pipe](http://github.com/lukasmartinelli/redis-pipe).
