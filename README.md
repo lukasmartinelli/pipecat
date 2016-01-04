@@ -167,7 +167,7 @@ with open(os.getenv('FACK', os.devnull), 'w') as stdack: # Works even if FACK is
 
 ### Use named queues for ACKs
 
-Now your program can no longer loose messages with `pipecat` because
+Now your program can no longer lose messages with `pipecat` because
 you can feed the `FACK` output back into `pipecat`
 using [named pipes](http://thorstenball.com/blog/2013/08/11/named-pipes/)
 which will only then acknowledge the messages from the message queue.
