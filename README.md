@@ -7,6 +7,18 @@ Think of it as [netcat](http://nc110.sourceforge.net/)
 but with message acknowledgments.
 It is the successor of [redis-pipe](http://github.com/lukasmartinelli/redis-pipe).
 
+```bash
+# Publish sequence of numbers to a job queue.
+seq 1 1000 | pipecat publish numbers
+
+# Multiply each number with 10 and store results in a different queue.
+pipecat consume numbers --autoack | xargs -n 1 expr 10 '*' | pipecat publish results
+
+# Aggregate the results and calculate the sum
+pipecat consume results --autoack --non-blocking \
+  | python -cu 'import sys; print(sum(map(int, sys.stdin)))'
+```
+
 ## Install
 
 ```
