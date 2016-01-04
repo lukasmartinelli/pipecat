@@ -19,7 +19,17 @@ pipecat consume results --autoack --non-blocking \
   | python -cu 'import sys; print(sum(map(int, sys.stdin)))'
 ```
 
+## Support
+
+Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
+
+- [ActiveMQ](http://activemq.apache.org/)
+- [RabbitMQ](https://www.rabbitmq.com/)
+- [Azure Service Bus](https://azure.microsoft.com/en-us/services/service-bus/)
+
 ## Install
+
+You can download a single binary for Linux, OSX or Windows.
 
 **OSX**
 
@@ -33,7 +43,7 @@ chmod +x pipecat
 **Linux**
 
 ```bash
-wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_darwin_amd64
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_linux_amd64
 chmod +x pipecat
 
 ./pipecat --help
@@ -48,14 +58,6 @@ go get github.com/lukasmartinelli/pipecat
 
 If you are using Windows or 32-bit architectures you need to [download the appropriate binary
 yourself](https://github.com/lukasmartinelli/pipecat/releases/latest).
-
-## Support
-
-Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
-
-- [ActiveMQ](http://activemq.apache.org/)
-- [RabbitMQ](https://www.rabbitmq.com/)
-- [Azure Service Bus](https://azure.microsoft.com/en-us/services/service-bus/)
 
 ## Using pipecat
 
