@@ -2,7 +2,7 @@
 
 <img align="right" alt="pipecat" src="pipecat.png" />
 Pipecat allows you to scale any program supporting the [FACK contract](#fack-contract)
-using traditional UNIX pipes and [AMPQ](https://www.amqp.org/).
+using traditional UNIX pipes and [AMQP](https://www.amqp.org/).
 Think of it as [netcat](http://nc110.sourceforge.net/)
 but with message acknowledgments.
 It is the successor of [redis-pipe](http://github.com/lukasmartinelli/redis-pipe).
@@ -21,7 +21,7 @@ pipecat consume results --autoack --non-blocking \
 
 ## Support
 
-Pipecat supports a local mode and all AMPQ 0.9.1 message brokers.
+Pipecat supports a local mode and all AMQP 0.9.1 message brokers.
 
 - [ActiveMQ](http://activemq.apache.org/)
 - [RabbitMQ](https://www.rabbitmq.com/)
@@ -103,7 +103,7 @@ pipecat consume results --autoack --non-blocking | python -cu 'import sys; print
 
 ### Local RabbitMQ with Docker
 
-If you do not have an existing AMPQ broker at hand you can run
+If you do not have an existing AMQP broker at hand you can run
 RabbitMQ in a docker container, expose the ports and connect to it.
 
 ```bash
