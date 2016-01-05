@@ -12,7 +12,6 @@ install:
   - go get github.com/streadway/amqp
 script:
   - go install
-  - seq 1 1000 | pipecat publish numbers
+  - seq 1 10 | pipecat publish numbers
   - pipecat consume numbers --autoack | xargs -n 1 expr 10 '*' | pipecat publish results
   - pipecat consume results --autoack --non-blocking
-
