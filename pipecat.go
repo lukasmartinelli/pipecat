@@ -19,22 +19,24 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func prepare(amqpUri string, queueName string) (*amqp.Connection, *amqp.Channel) {
+func prepare(amqpUri string, queueName string, createQueue bool) (*amqp.Connection, *amqp.Channel) {
 	conn, err := amqp.Dial(amqpUri)
 	failOnError(err, "Failed to connect to AMQP broker")
 
 	channel, err := conn.Channel()
 	failOnError(err, "Failed to open a channel")
 
-	_, err = channel.QueueDeclare(
-		queueName, // name
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
-	)
-	failOnError(err, "Failed to declare queue")
+	if createQueue == true {
+		_, err = channel.QueueDeclare(
+			queueName, // name
+			true,      // durable
+			false,     // delete when unused
+			false,     // exclusive
+			false,     // no-wait
+			nil,       // arguments
+		)
+		failOnError(err, "Failed to declare queue")
+	}
 
 	return conn, channel
 }
@@ -45,8 +47,8 @@ func publish(c *cli.Context) {
 		fmt.Println("Please provide name of the queue")
 		os.Exit(1)
 	}
+	conn, channel := prepare(c.String("amqpuri"), queueName, !c.Bool("no-create-queue"))
 
-	conn, channel := prepare(c.String("amqpuri"), queueName)
 	defer conn.Close()
 	defer channel.Close()
 
@@ -54,7 +56,7 @@ func publish(c *cli.Context) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		err := channel.Publish(
-			"",        // exchange
+			c.String("exchange"),        // exchange
 			queueName, // routing key
 			false,     // mandatory
 			false,     // immediate
@@ -77,7 +79,7 @@ func consume(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	conn, channel := prepare(c.String("amqpuri"), queueName)
+	conn, channel := prepare(c.String("amqpuri"), queueName, !c.Bool("no-create-queue"))
 	defer conn.Close()
 	defer channel.Close()
 
@@ -163,6 +165,16 @@ func main() {
 			Value:  "amqp://guest:guest@localhost:5672/",
 			Usage:  "AMQP URI",
 			EnvVar: "AMQP_URI",
+		},
+		cli.StringFlag{
+			Name:   "exchange",
+			Value:  "",
+			Usage:  "AMQP Exchange to publish to (default: \"\")",
+			EnvVar: "AMQP_EXCHANGE",
+		},
+		cli.BoolFlag{
+			Name:  "no-create-queue",
+			Usage: "Don't create queue",
 		},
 		cli.BoolFlag{
 			Name:  "autoack",
