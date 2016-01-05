@@ -13,5 +13,5 @@ install:
 script:
   - go install
   - seq 1 10 | pipecat publish numbers
-  - pipecat consume numbers --autoack | xargs -n 1 expr 10 '*' | pipecat publish results
+  - pipecat consume numbers --non-blocking --autoack | xargs -n 1 expr 10 '*' | pipecat publish results
   - pipecat consume results --autoack --non-blocking
