@@ -118,13 +118,18 @@ export AMQP_URI=amqp://guest:guest@localhost:5672/
 
 ### Publish messages to Exchange
 
-If you are using existing message queue infrastructure you can also publish messages to an exchange.
+If you are using existing message queue infrastructure you can also publish messages to an exchange, with the first parameter used as the routing key.
 Thanks to @kennon for the implementation.
 
 ```bash
-seq 1 1000 | pipecat publish --exchange "\" --no-create-queue numbers
+seq 1 1000 | pipecat publish --exchange "my_exchange" --no-create-queue my.routing.key
 ```
 
+The AMQP_EXCHANGE environment variable can also be used:
+
+```bash
+export AMQP_EXCHANGE=my_exchange
+```
 
 ## Make it failsafe
 
