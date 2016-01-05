@@ -113,7 +113,7 @@ docker run -d -p 5672:5672 --hostname pipecat-rabbit --name pipecat-rabbit rabbi
 Now connect to localhost with the default `guest` login.
 
 ```bash
-export AMQP_URI=amqp://guest:guest@localhost:5672/vhost
+export AMQP_URI=amqp://guest:guest@localhost:5672/
 ```
 
 ### Publish messages to Exchange
