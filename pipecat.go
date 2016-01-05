@@ -56,10 +56,10 @@ func publish(c *cli.Context) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		err := channel.Publish(
-			c.String("exchange"),        // exchange
-			queueName, // routing key
-			false,     // mandatory
-			false,     // immediate
+			c.String("exchange"), // exchange
+			queueName,            // routing key
+			false,                // mandatory
+			false,                // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
 				Body:        []byte(line),
@@ -157,7 +157,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "pipecat"
 	app.Usage = "Connect unix pipes and message queues"
-	app.Version = "0.1"
+	app.Version = "0.2"
 
 	globalFlags := []cli.Flag{
 		cli.StringFlag{

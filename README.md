@@ -34,7 +34,7 @@ You can download a single binary for Linux, OSX or Windows.
 **OSX**
 
 ```bash
-wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_darwin_amd64
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.2/pipecat_darwin_amd64
 chmod +x pipecat
 
 ./pipecat --help
@@ -43,7 +43,7 @@ chmod +x pipecat
 **Linux**
 
 ```bash
-wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.1/pipecat_linux_amd64
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.2/pipecat_linux_amd64
 chmod +x pipecat
 
 ./pipecat --help
@@ -119,6 +119,7 @@ export AMQP_URI=amqp://guest:guest@localhost:5672/vhost
 ### Publish messages to Exchange
 
 If you are using existing message queue infrastructure you can also publish messages to an exchange.
+Thanks to @kennon for the implementation.
 
 ```bash
 seq 1 1000 | pipecat publish --exchange "\" --no-create-queue numbers
