@@ -116,6 +116,14 @@ Now connect to localhost with the default `guest` login.
 export AMQP_URI=amqp://guest:guest@localhost:5672/vhost
 ```
 
+### Publish messages to Exchange
+
+If you are using existing message queue infrastructure you can also publish messages to an exchange.
+
+```bash
+seq 1 1000 | pipecat publish --exchange "\" --no-create-queue numbers
+```
+
 
 ## Make it failsafe
 
