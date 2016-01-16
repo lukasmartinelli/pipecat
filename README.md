@@ -19,6 +19,8 @@ pipecat consume results --autoack --non-blocking \
   | python -cu 'import sys; print(sum(map(int, sys.stdin)))'
 ```
 
+> If you are into streams and UNIX pipes [checkout my Haskell based awk and sed alternative ](https://github.com/lukasmartinelli/hadolint)
+
 ## Support
 
 Pipecat supports a local mode and all AMQP 0.9.1 message brokers.
