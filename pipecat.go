@@ -52,6 +52,13 @@ func publish(c *cli.Context) {
 	defer conn.Close()
 	defer channel.Close()
 
+	// It is better to have a durable delivery mode and let user disable it
+	// even though it is not the RabbitMQ default
+	deliveryMode := uint8(2)
+	if c.Bool("transient") {
+		deliveryMode = 1
+	}
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -63,6 +70,8 @@ func publish(c *cli.Context) {
 			amqp.Publishing{
 				ContentType: "text/plain",
 				Body:        []byte(line),
+				DeliveryMode:deliveryMode,
+
 			})
 
 		failOnError(err, "Failed to publish a message")
@@ -183,6 +192,10 @@ func main() {
 		cli.BoolFlag{
 			Name:  "non-blocking",
 			Usage: "Stop consumer after timeout",
+		},
+		cli.BoolFlag{
+			Name:  "transient",
+			Usage: "Publish messages with transient delivery mode",
 		},
 		cli.IntFlag{
 			Name:  "timeout",
