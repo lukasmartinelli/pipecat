@@ -220,6 +220,16 @@ With a few lines additional code only depending on the standard library
 you can now make any program in any language scalable using message queues.
 Without any dependencies and without changing the behavior bit.
 
+## Usage Examples
+
+### Create local Queue Backup
+
+```bash
+pipecat consume results --autoack --non-blocking \
+  | tee results_backup.json \
+  | pipecat publish results
+```
+
 ## Cross Compile Release
 
 We use [gox](https://github.com/mitchellh/gox) to create distributable
