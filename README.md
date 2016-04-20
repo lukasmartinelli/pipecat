@@ -225,9 +225,8 @@ Without any dependencies and without changing the behavior bit.
 ### Create local Queue Backup
 
 ```bash
-pipecat consume results --autoack --non-blocking \
-  | tee results_backup.json \
-  | pipecat publish results
+pipecat consume results --autoack --non-blocking > results_backup.json
+cat results_backup.json | pipecat publish results
 ```
 
 ## Cross Compile Release
