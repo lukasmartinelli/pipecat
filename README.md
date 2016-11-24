@@ -36,7 +36,7 @@ You can download a single binary for Linux, OSX or Windows.
 **OSX**
 
 ```bash
-wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.2/pipecat_darwin_amd64
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.3/pipecat_darwin_amd64
 chmod +x pipecat
 
 ./pipecat --help
@@ -45,7 +45,7 @@ chmod +x pipecat
 **Linux**
 
 ```bash
-wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.2/pipecat_linux_amd64
+wget -O pipecat https://github.com/lukasmartinelli/pipecat/releases/download/v0.3/pipecat_linux_amd64
 chmod +x pipecat
 
 ./pipecat --help

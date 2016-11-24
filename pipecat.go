@@ -68,10 +68,9 @@ func publish(c *cli.Context) {
 			false,                // mandatory
 			false,                // immediate
 			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        []byte(line),
-				DeliveryMode:deliveryMode,
-
+				ContentType:  "text/plain",
+				Body:         []byte(line),
+				DeliveryMode: deliveryMode,
 			})
 
 		failOnError(err, "Failed to publish a message")
@@ -166,7 +165,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "pipecat"
 	app.Usage = "Connect unix pipes and message queues"
-	app.Version = "0.2"
+	app.Version = "0.3"
 
 	globalFlags := []cli.Flag{
 		cli.StringFlag{
