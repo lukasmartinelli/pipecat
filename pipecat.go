@@ -8,6 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"encoding/base64"
+
 	"github.com/codegangsta/cli"
 	"github.com/streadway/amqp"
 )
@@ -19,8 +21,8 @@ func failOnError(err error, msg string) {
 	}
 }
 
-func prepare(amqpUri string, queueName string, createQueue bool) (*amqp.Connection, *amqp.Channel) {
-	conn, err := amqp.Dial(amqpUri)
+func prepare(amqpURI string, queueName string, createQueue bool) (*amqp.Connection, *amqp.Channel) {
+	conn, err := amqp.Dial(amqpURI)
 	failOnError(err, "Failed to connect to AMQP broker")
 
 	channel, err := conn.Channel()
@@ -62,6 +64,14 @@ func publish(c *cli.Context) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
 		line := scanner.Text()
+
+		msgBody := []byte(line)
+		if c.Bool("base64") {
+			var encodeErr error
+			msgBody, encodeErr = base64.StdEncoding.DecodeString(line)
+			failOnError(encodeErr, "Fail to decode base64")
+		}
+
 		err := channel.Publish(
 			c.String("exchange"), // exchange
 			queueName,            // routing key
@@ -69,7 +79,7 @@ func publish(c *cli.Context) {
 			false,                // immediate
 			amqp.Publishing{
 				ContentType:  "text/plain",
-				Body:         []byte(line),
+				Body:         msgBody,
 				DeliveryMode: deliveryMode,
 			})
 
@@ -114,6 +124,9 @@ func consume(c *cli.Context) {
 			mutex.Lock() // use channels some day
 			for i, msg := range unackedMessages {
 				unackedLine := fmt.Sprintf("%s", msg.Body)
+				if c.Bool("base64") {
+					unackedLine = base64.StdEncoding.EncodeToString([]byte(unackedLine))
+				}
 				if unackedLine == ackedLine {
 					msg.Ack(false)
 
@@ -142,6 +155,9 @@ func consume(c *cli.Context) {
 					mutex.Unlock()
 				}
 				line := fmt.Sprintf("%s", msg.Body)
+				if c.Bool("base64") {
+					line = base64.StdEncoding.EncodeToString([]byte(line))
+				}
 				fmt.Println(line)
 			case <-time.After(timeout):
 				if c.Bool("non-blocking") {
@@ -165,7 +181,7 @@ func main() {
 	app := cli.NewApp()
 	app.Name = "pipecat"
 	app.Usage = "Connect unix pipes and message queues"
-	app.Version = "0.3"
+	app.Version = "0.3.1"
 
 	globalFlags := []cli.Flag{
 		cli.StringFlag{
@@ -200,6 +216,10 @@ func main() {
 			Name:  "timeout",
 			Value: 1,
 			Usage: "Timeout to wait for messages",
+		},
+		cli.BoolFlag{
+			Name:  "base64",
+			Usage: "Encode to Base64 string in consumer mode. Decode from Base64 string in publish mode",
 		},
 	}
 
